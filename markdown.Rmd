@@ -23,15 +23,19 @@ library(ggplot2)
 -   \- [Yearly Suicide Data](https://data.tuik.gov.tr/Bulten/DownloadIstatistikselTablo?p=9u2oCqacK3ZUqx4qFHbuTulw5EqmeCn1xvvQcrq4mI95KN20YzGH7r0a1Be7Bz1y){.uri}
 
 ## 
+
 ![Unemployment Rate](img/unemployment.jpg)
 
 ## 
+
 ![Consumer Price Index](img/priceindex.jpg)
 
 ## 
+
 ![Suicide Data](img/suicide.jpg)
 
 ## Cleaning Datas
+
 ```{r}
   library(dplyr)
   #Unemployment Data
@@ -42,6 +46,7 @@ library(ggplot2)
 ```
 
 ## 
+
 ```{r}
     #Consumer Price Index
     priceIndex <- priceIndex |>
@@ -50,7 +55,8 @@ library(ggplot2)
     mutate(Total = rowSums(across(January:December)), .before = January)
 ```
 
-##
+## 
+
 ```{r}
     #Suicide data
     rows_to_read <- c(41,80,119,158,197,236,275,314)
@@ -62,6 +68,7 @@ library(ggplot2)
 ```
 
 ## Suicide - Consumer Price Index Plot
+
 ```{r}
 ggplot() +
     geom_line(data=suicideData,aes(x=as.numeric(Year), y = as.numeric(Total)), color="#aa0000", linewidth=1.2) +
@@ -78,10 +85,11 @@ ggplot() +
 ```
 
 ## Suicide - Unemployment Rate Plot
+
 ```{r}
 ggplot() +
-  geom_line(data=suicideData,aes(x=as.numeric(Year), y = (as.numeric(Total))), color="#aa0000", size=1.2) +
-  geom_line(data=unemploymentData, aes(x=as.numeric(Year),y=as.numeric(Count)), color="#0000aa", size=1.2) +
+  geom_line(data=suicideData,aes(x=as.numeric(Year), y = (as.numeric(Total))), color="#aa0000", linewidth=1.2) +
+  geom_line(data=unemploymentData, aes(x=as.numeric(Year),y=as.numeric(Count)), color="#0000aa", linewidth=1.2) +
   scale_y_continuous(
     name = "Suicide Rates",
     sec.axis = sec_axis(~., name="Unemployment Count (Thousand)")
@@ -89,6 +97,5 @@ ggplot() +
   theme(
     axis.title.y = element_text(color = "#aa0000", size=12),
     axis.title.y.right = element_text(color = "#0000aa", size=10)
-  ) +
-  labs(title="Price-Unemployment Plot") + xlab("Year")
+  ) + labs(title="Price-Unemployment Plot") + xlab("Year")
 ```
