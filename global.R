@@ -29,7 +29,7 @@ head(inflation_data_filtered)
 
 
 
-suicide_data  <- read.csv("C:/Users/kahra/Downloads/xmart.csv", skip = 1)
+suicide_data  <- read.csv("C:/Users/kahra/Downloads/global_suicide_rates.csv", skip = 1)
 
 
 suicide_data_cleared <- suicide_data %>%
