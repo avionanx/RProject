@@ -202,7 +202,13 @@ Results show there is no relation between unemployment and suicides.
 inflation_suicide_global
 ```
 
+Contrary to Turkey, suicide rates have been going down for about 18 years. 
+
 ## World: Suicide - Unemployment
 ```{r echo=FALSE}
 unemployment_suicide_global
 ```
+
+# Conclusion
+
+Turkey's inflation rates and, maybe with a correlation, suicide rates has been going up aswell. While world took actions to reduce suicides, such as, National Suicide Prevention hotlines, Turkey currently has none. Because of this, the results show suicide numbers could go higher in next years. 
