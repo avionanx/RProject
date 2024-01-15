@@ -1,0 +1,208 @@
+---
+title: "Project Report"
+author: "Orhan Kocak, Enis Arda Iskender, Kerem Efe Akyurt"
+date: "2024-01-13"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(readxl)
+library(tidyverse)
+
+  unemploymentData <- read_excel("unemployment.xls", skip = 6, col_names = c("Year","Count","Percentage"))
+  unemploymentData <- unemploymentData |>
+    slice(0:8)
+  unemploymentData[8,1] = "2021"
+  
+      priceIndex <- read_excel("inflation.xls", skip = 4, col_names = c("Year","January","February","March","April","May","June","July","August","September","October","November","December"))
+    priceIndex <- priceIndex |>
+    slice(12:19)|>
+    mutate(across(2:last_col(), as.numeric))|>
+    mutate(Total = rowSums(across(January:December)), .before = January)
+    
+      rows_to_read_male <- c(42,81,120,159,198,237,276,315)
+  rows_to_read_female <- c(43,82,121,160,199,238,277,316)
+  suicideData <- read_excel("suicide.xls", skip = 4)
+  suicideData_male <- suicideData |>
+    slice(rows_to_read_male)|>
+    select(-c(1,2))|>
+    mutate(Year = c(2021,2020,2019,2018,2017,2016,2015,2014), .before = Sex)|>
+    arrange(-dplyr::row_number())
+  suicideData_female <- suicideData |>
+    slice(rows_to_read_female)|>
+    select(-c(1,2))|>
+    mutate(Year = c(2021,2020,2019,2018,2017,2016,2015,2014), .before = Sex)|>
+    arrange(-dplyr::row_number())
+  
+  inflation_data  <- read.csv("inflation_oecd.csv")
+  inflation_data_cleared <- inflation_data[, !(names(inflation_data) %in% c("INDICATOR","MEASURE", "SUBJECT", "FREQUENCY", "Flag.Codes"))]
+  inflation_data_filtered <- inflation_data_cleared %>%
+    filter(between(TIME, 2000, 2019))
+  
+    unemployee_data <- read.csv("unemployee_rate.csv")
+  unemployee_data_oecd <- unemployee_data %>% filter(LOCATION == "OECD")
+  unemployee_data_oecd_filtered <- unemployee_data_oecd[, !(names(unemployee_data_oecd) %in% c("MEASURE", "SUBJECT", "FREQUENCY", "Flag.Codes"))]
+  
+  suicide_data  <- read.csv("global_suicide_rates.csv", skip = 1)
+suicide_data_cleared <- suicide_data %>%
+    mutate(across(starts_with("X"), ~gsub("\\[.*?\\]", "", .)))
+suicide_data_filtered <- suicide_data_cleared %>%
+    gather(key = "year_rate", value = "rate", starts_with("X")) %>%
+    mutate(year = gsub("X\\.", "", year_rate)) %>%
+    separate(year, into = c("year", "X"), sep = "\\.") %>%
+    select(-X, -year_rate) %>%
+    arrange(year)
+suicide_data_filtered_avg <- suicide_data_filtered %>%
+    group_by(year, Sex) %>%
+    summarise(rate = mean(as.numeric(rate), na.rm = TRUE))
+suicide_data_filtered_avg_unisex <- suicide_data_filtered_avg %>%
+    filter(Sex == " Male")
+
+  plot_suicide_vs_price <- ggplot() +
+    geom_bar(data = suicideData_male, aes(x = as.numeric(Year) - 0.2, y = as.numeric(Total), fill = "Male"), 
+             color = "cyan", position = "dodge", stat = "identity", width = 0.4) +
+    geom_bar(data = suicideData_female, aes(x = as.numeric(Year) + 0.2, y = as.numeric(Total), fill = "Female"), 
+             color = "pink", position = "dodge", stat = "identity", width = 0.4) +
+    geom_line(data = priceIndex, aes(x = as.numeric(Year), y = as.numeric(Total) / 2, group = 1), 
+              color = "#0000aa", linewidth = 1.2) +
+    scale_y_continuous(
+      name = "Suicide Rates",
+      sec.axis = sec_axis(~ . * 2, name = "Consumer Price", breaks = seq(0, max(priceIndex$Total), by = 500))
+    ) +
+    scale_fill_manual(values = c("Male" = "cyan", "Female" = "pink")) +
+    theme(
+      axis.title.y = element_text(color = "black", size = 12),
+      axis.title.y.right = element_text(color = "#0000aa", size = 12)
+    ) +
+    labs(title = "Suicide Rates Vs. Consumer Price Index") + xlab("Year")
+  plot_suicide_vs_unemployment <- ggplot() +
+    geom_bar(data = suicideData_male, aes(x = as.numeric(Year) - 0.2, y = as.numeric(Total), fill = "Male"),
+             color = "cyan", position = "dodge", stat = "identity", width = 0.4) +
+    geom_bar(data = suicideData_female, aes(x = as.numeric(Year) + 0.2, y = as.numeric(Total), fill = "Female"),
+             color = "pink", position = "dodge", stat = "identity", width = 0.4) +
+    geom_line(data = unemploymentData, aes(x = as.numeric(Year), y = Count),
+              color = "#0000aa", linewidth = 1.2, group = 1) +
+    scale_y_continuous(
+      name = "Suicide Rates",
+      sec.axis = sec_axis(~ ., name = "Unemployment",
+                          breaks = seq(0, max(unemploymentData$Count), by = 500))
+    ) +
+    scale_fill_manual(values = c("Male" = "cyan", "Female" = "pink")) +
+    theme(
+      axis.title.y = element_text(color = "black", size = 12),
+      axis.title.y.right = element_text(color = "#0000aa", size = 12)
+    ) +
+    labs(title = "Suicide Rates Vs. Unemployment") + xlab("Year")
+  
+  inflation_suicide_global <- ggplot() +
+  geom_line(data=suicide_data_filtered_avg_unisex,aes(x=as.numeric(year), y = (as.numeric(rate))), color="#aa0000", linewidth=1.2) +
+  geom_line(data=inflation_data_filtered, aes(x=as.numeric(TIME),y=as.numeric(Value)), color="#0000aa", linewidth=1.2) +
+  scale_y_continuous(
+    name = "Suicide Rates",
+    sec.axis = sec_axis(~., name="Inflation")
+  ) +
+  theme(
+    axis.title.y = element_text(color = "#aa0000", size=12),
+    axis.title.y.right = element_text(color = "#0000aa", size=12)
+  ) +
+  labs(
+    title="Inflation-Suicide Plot",
+    caption="Suicide count per 100.000 people*"
+  ) +
+  xlab("Year")
+  
+  unemployment_suicide_global <- ggplot() +
+  geom_line(data=suicide_data_filtered_avg_unisex,aes(x=as.numeric(year), y = (as.numeric(rate))), color="#aa0000", linewidth=1.2) +
+  geom_line(data=unemployee_data_oecd_filtered, aes(x=as.numeric(TIME),y=as.numeric(Value)), color="#0000aa", linewidth=1.2) +
+  scale_y_continuous(
+    name = "Suicide Rates",
+    sec.axis = sec_axis(~., name="Unemployment")
+  ) +
+  theme(
+    axis.title.y = element_text(color = "#aa0000", size=12),
+    axis.title.y.right = element_text(color = "#0000aa", size=12)
+  ) +
+  labs(
+    title="Unemployment-Suicide Plot",
+    caption="Suicide count per 100.000 people*"
+  ) +
+  xlab("Year")
+```
+
+## Research Question
+Is there any relation between inflation, unemployment and suicide data over the years?
+
+## Datasets Used 
+-   \- [Consumer Price Index](https://data.tuik.gov.tr/Bulten/DownloadIstatistikselTablo?p=VNahkuJlRdjGi186A0UyGFl4/vvuLqcU9WNSamrnmn2BsuZQSCYHsScr/wPRAsfd){.uri}
+-   \- [Unemployment Rates](https://data.tuik.gov.tr/Bulten/DownloadIstatistikselTablo?p=8qvM/mN5mN8/qVhH4ZBw5Oevs/TvsYlRCOC2Dg/dcM7k8bk7Eod5aaqpj9EGFPTS){.uri}
+-   \- [Yearly Suicide Data](https://data.tuik.gov.tr/Bulten/DownloadIstatistikselTablo?p=9u2oCqacK3ZUqx4qFHbuTulw5EqmeCn1xvvQcrq4mI95KN20YzGH7r0a1Be7Bz1y){.uri}
+-   \- [Global Suicide Data](https://apps.who.int/gho/data/node.main.MHSUICIDEASDR?lang=en){.uri}
+-   \- [Global Inflation Data](https://data.oecd.org/price/inflation-cpi.htm){.uri}
+-   \- [Global Unemployment Rates](https://data.oecd.org/unemp/unemployment-rate.htm){.uri}
+
+# Data Views (Cleaned)
+
+## Unemployment Data
+
+```{r echo=FALSE}
+head(unemploymentData)
+```
+
+## Consumer Price Index
+
+```{r echo=FALSE}
+head(priceIndex)
+```
+
+## Suicide Data
+
+```{r echo=FALSE}
+head(suicideData_male)
+```
+
+## Global Inflation Data
+
+```{r echo=FALSE}
+head(inflation_data_filtered)
+```
+
+## Global Unemployment Data
+
+```{r echo=FALSE}
+head(unemployee_data_oecd_filtered)
+```
+
+## Global Suicide Data
+
+```{r echo=FALSE}
+head(suicide_data_filtered_avg_unisex)
+```
+
+# Plots
+
+## Turkey: Suicide - Consumer Price Index
+```{r echo=FALSE}
+plot_suicide_vs_price
+```
+
+Results show there might be a correlation between consumer prices and suicides, and steadily growing.
+
+## Turkey: Suicide - Unemployment
+```{r echo=FALSE}
+plot_suicide_vs_unemployment
+```
+
+Results show there is no relation between unemployment and suicides.
+
+## World: Suicide - Inflation
+```{r echo=FALSE}
+inflation_suicide_global
+```
+
+## World: Suicide - Unemployment
+```{r echo=FALSE}
+unemployment_suicide_global
+```
